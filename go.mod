@@ -11,7 +11,7 @@ require (
 	github.com/alrusov/panic v0.1.14
 	github.com/alrusov/stdhttp v0.1.97
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/google/uuid v1.3.0
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 )

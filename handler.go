@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	"golang.org/x/oauth2"
 
 	"github.com/alrusov/auth"
