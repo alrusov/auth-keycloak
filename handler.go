@@ -407,6 +407,7 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 		func(*jwt.Token) (interface{}, error) {
 			return ah.kcPubKey, nil
 		},
+		jwt.WithoutAudienceValidation(),
 	)
 	if err != nil {
 		return

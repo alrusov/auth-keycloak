@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
+	"github.com/alrusov/auth"
 	"github.com/alrusov/log"
 	"github.com/alrusov/misc"
 	"github.com/alrusov/panic"
@@ -34,7 +35,7 @@ func (ah *AuthHandler) init() (err error) {
 	ah.callbackRedirectPath = "/oauth/callback"
 	ah.logoutRedirectPath = "/oauth/logout"
 
-	ah.http.AddHandler(ah, true)
+	ah.http.AddHandler(ah, false)
 	ah.http.AddEndpointsInfo(
 		misc.StringMap{
 			ah.callbackRedirectPath: "Callback for the Keycloack. Parameters: according to keycloak documentation",
@@ -89,7 +90,7 @@ func (ah *AuthHandler) init() (err error) {
 
 				// И создаем верифаера
 				ah.verifier = ah.provider.Verifier(&oidc.Config{ClientID: ah.options.ClientID})
-				log.Message(log.INFO, "[kc.init] Succesfully")
+				auth.Log.Message(log.INFO, "[kc.init] Succesfully")
 
 			case 4:
 				// Всё готово. Отдельным шагом, чтобы проще было что-то еще добавить, если потребуется.
@@ -97,7 +98,7 @@ func (ah *AuthHandler) init() (err error) {
 			}
 
 			if err != nil {
-				log.Message(log.ERR, "[kc.init] %s", err)
+				auth.Log.Message(log.ERR, "[kc.init] %s", err)
 				delay = 5 * time.Second
 				continue
 			}
