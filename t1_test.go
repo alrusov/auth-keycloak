@@ -60,7 +60,7 @@ func TestIsLocal(t *testing.T) {
 		i++
 		local := isLocal(p.url)
 		if local != p.local {
-			t.Errorf(`[%d] "%s": got %v, expected %v`, i, p.url, local, p.local)
+			t.Errorf(`[%d] "%s": got %v, %v expected`, i, p.url, local, p.local)
 		}
 	}
 }

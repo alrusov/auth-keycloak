@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/coreos/go-oidc"
 	"github.com/dgrijalva/jwt-go/v4"
@@ -55,16 +54,15 @@ type (
 
 	// Дополнительные параметры конфигурации
 	methodOptions struct {
-		Domain              string        `toml:"domain"`                // Имя домена для установки cookie, должен совпадать с доменом "me", в крайнем случае можно указать IP
-		AuthServer          string        `toml:"auth-server"`           //URL kc сервера
-		WithGzip            bool          `toml:"gzip"`                  // Использовать gzip при взаимодействии с kc сервером
-		TimeoutS            string        `toml:"timeout"`               // Строчное представление таймаута
-		Timeout             time.Duration `toml:"-"`                     // Таймаут
-		SkipTLSVerification bool          `toml:"skip-tls-verification"` // Надо ли проверять TLS сертификат сервера на валидность
-		ClientRealm         string        `toml:"client-realm"`          // realm клиента в keycloak
-		ClientID            string        `toml:"client-id"`             // ID клиента в keycloak
-		ClientSecret        string        `toml:"client-secret"`         // secret клиента в keycloak
-		CheckACR            bool          `toml:"check-acr"`             // Дополнительная проверка поля acr токена, при доступе к приложениям по IP рекомендуется отключить
+		Domain              string          `toml:"domain"`                // Имя домена для установки cookie, должен совпадать с доменом "me", в крайнем случае можно указать IP
+		AuthServer          string          `toml:"auth-server"`           //URL kc сервера
+		WithGzip            bool            `toml:"gzip"`                  // Использовать gzip при взаимодействии с kc сервером
+		Timeout             config.Duration `toml:"timeout"`               // Таймаут
+		SkipTLSVerification bool            `toml:"skip-tls-verification"` // Надо ли проверять TLS сертификат сервера на валидность
+		ClientRealm         string          `toml:"client-realm"`          // realm клиента в keycloak
+		ClientID            string          `toml:"client-id"`             // ID клиента в keycloak
+		ClientSecret        string          `toml:"client-secret"`         // secret клиента в keycloak
+		CheckACR            bool            `toml:"check-acr"`             // Дополнительная проверка поля acr токена, при доступе к приложениям по IP рекомендуется отключить
 	}
 
 	// Описание сессии
@@ -140,7 +138,7 @@ func checkConfig(m *config.AuthMethod) (err error) {
 
 	options, ok := m.Options.(*methodOptions)
 	if !ok {
-		msgs.Add(`%s.checkConfig: Options is "%T", expected "%T"`, method, m.Options, options)
+		msgs.Add(`%s.checkConfig: Options is "%T", "%T" expected`, method, m.Options, options)
 	}
 
 	options.AuthServer = misc.NormalizeSlashes(options.AuthServer)
@@ -159,11 +157,6 @@ func checkConfig(m *config.AuthMethod) (err error) {
 
 	if net.ParseIP(options.Domain) == nil {
 		options.Domain = "." + options.Domain
-	}
-
-	options.Timeout, err = misc.Interval2Duration(options.TimeoutS)
-	if err != nil {
-		msgs.Add(`%s.checkConfig: "timeout" - %s`, method, err)
 	}
 
 	if options.Timeout <= 0 {
@@ -200,7 +193,7 @@ func (ah *AuthHandler) Init(cfg *config.Listener) (err error) {
 
 	options, ok := methodCfg.Options.(*methodOptions)
 	if !ok {
-		return fmt.Errorf(`options for module "%s" is "%T", expected "%T"`, module, methodCfg.Options, options)
+		return fmt.Errorf(`options for module "%s" is "%T", "%T" expected`, module, methodCfg.Options, options)
 	}
 
 	ah.cfg = methodCfg

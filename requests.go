@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/alrusov/jsonw"
 	"github.com/alrusov/misc"
@@ -25,7 +26,7 @@ func (ah *AuthHandler) request(result interface{}, method string, uri string, he
 		stdhttp.RequestOptionGzip:                fmt.Sprint(ah.options.WithGzip),
 	}
 
-	buf, _, err := stdhttp.Request(method, uri, ah.options.Timeout, opts, headers, body)
+	buf, _, err := stdhttp.Request(method, uri, time.Duration(ah.options.Timeout), opts, headers, body)
 	if err != nil {
 		b := []byte{}
 		if buf != nil {
