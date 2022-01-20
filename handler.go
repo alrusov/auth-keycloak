@@ -122,24 +122,14 @@ const (
 
 //----------------------------------------------------------------------------------------------------------------------------//
 
-// Автоматическая инициализация при запуске приложения
+// Автоматическая регистрация при запуске приложения
 func init() {
-	Register()
+	config.AddAuthMethod(module, &methodOptions{})
 }
 
-// Регистрация метода
-func Register() {
-	config.AddAuthMethod(module, &methodOptions{}, checkConfig)
-}
-
-// Проверка валидности конфига метода
-func checkConfig(m *config.AuthMethod) (err error) {
+// Проверка валидности дополнительных опций метода
+func (options *methodOptions) Check(cfg interface{}) (err error) {
 	msgs := misc.NewMessages()
-
-	options, ok := m.Options.(*methodOptions)
-	if !ok {
-		msgs.Add(`%s.checkConfig: Options is "%T", "%T" expected`, method, m.Options, options)
-	}
 
 	options.AuthServer = misc.NormalizeSlashes(options.AuthServer)
 
