@@ -28,7 +28,7 @@ func (ah *AuthHandler) Handler(id uint64, prefix string, path string, w http.Res
 		// Удаляем KC куки, добавлем токен и летим на закрытие сессии
 		w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s; expires=Thu, 1 Jan 1970 00:00:00 UTC;", accessTokenName, "", ah.options.Domain))
 		w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s; expires=Thu, 1 Jan 1970 00:00:00 UTC;", refreshTokenName, "", ah.options.Domain))
-		w.Header().Set("Authorization", "Bearer "+requestQuery.Get("token"))
+		w.Header().Set(auth.Header, "Bearer "+requestQuery.Get("token"))
 		w.Header().Set("Location", fmt.Sprintf("%s?redirect_uri=%s", ah.clientCfg.EndSessionEndpoint, url.QueryEscape(requestQuery.Get("referer"))))
 		w.WriteHeader(http.StatusFound)
 

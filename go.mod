@@ -3,11 +3,11 @@ module github.com/alrusov/auth-keycloak
 go 1.17
 
 require (
-	github.com/alrusov/auth v0.1.0
-	github.com/alrusov/config v0.1.45
+	github.com/alrusov/auth v0.1.1
+	github.com/alrusov/config v0.1.46
 	github.com/alrusov/jsonw v0.1.1
 	github.com/alrusov/log v0.1.31
-	github.com/alrusov/misc v0.1.49
+	github.com/alrusov/misc v0.1.51
 	github.com/alrusov/panic v0.1.14
 	github.com/alrusov/stdhttp v0.1.99
 	github.com/coreos/go-oidc v2.2.1+incompatible
