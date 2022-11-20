@@ -128,7 +128,7 @@ func init() {
 }
 
 // Проверка валидности дополнительных опций метода
-func (options *methodOptions) Check(cfg interface{}) (err error) {
+func (options *methodOptions) Check(cfg any) (err error) {
 	msgs := misc.NewMessages()
 
 	options.AuthServer = misc.NormalizeSlashes(options.AuthServer)
@@ -183,7 +183,7 @@ func (ah *AuthHandler) Init(cfg *config.Listener) (err error) {
 
 	options, ok := methodCfg.Options.(*methodOptions)
 	if !ok {
-		return fmt.Errorf(`options for module "%s" is "%T", "%T" expected`, module, methodCfg.Options, options)
+		return fmt.Errorf(`options for module "%s" is "%T", expected "%T"`, module, methodCfg.Options, options)
 	}
 
 	ah.cfg = methodCfg
@@ -387,7 +387,7 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 	}
 
 	_, err = jwt.ParseWithClaims(accessToken, &session.TokenInfo,
-		func(*jwt.Token) (interface{}, error) {
+		func(*jwt.Token) (any, error) {
 			return ah.kcPubKey, nil
 		},
 		jwt.WithoutAudienceValidation(),
@@ -464,7 +464,7 @@ func (ah *AuthHandler) tryToRefresh(id uint64, w http.ResponseWriter, r *http.Re
 //----------------------------------------------------------------------------------------------------------------------------//
 
 // Ответ при ошибке
-func (ah *AuthHandler) errorReply(id uint64, w http.ResponseWriter, r *http.Request, httpCode int, message string, p ...interface{}) {
+func (ah *AuthHandler) errorReply(id uint64, w http.ResponseWriter, r *http.Request, httpCode int, message string, p ...any) {
 	message = fmt.Sprintf(message, p...)
 
 	msg := struct {

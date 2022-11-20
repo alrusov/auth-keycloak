@@ -45,6 +45,9 @@ func (ah *AuthHandler) init() (err error) {
 	go func() {
 		// Договариваемся с KC сервером
 
+		panicID := panic.ID()
+		defer panic.SaveStackToLogEx(panicID)
+
 		var err error
 		delay := time.Duration(0)
 		step := 0

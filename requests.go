@@ -20,7 +20,7 @@ import (
 
 // Запрос к серверу
 // В result должна быть ссылка на объект того типа, который мы ждем от этого конкретного запроса!
-func (ah *AuthHandler) request(result interface{}, method string, uri string, headers misc.StringMap, body []byte) (err error) {
+func (ah *AuthHandler) request(result any, method string, uri string, headers misc.StringMap, body []byte) (err error) {
 	opts := misc.StringMap{
 		stdhttp.RequestOptionSkipTLSVerification: fmt.Sprint(ah.options.SkipTLSVerification),
 		stdhttp.RequestOptionGzip:                fmt.Sprint(ah.options.WithGzip),
