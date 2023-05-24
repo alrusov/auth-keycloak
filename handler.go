@@ -5,6 +5,7 @@ package kc
 
 import (
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -237,10 +238,10 @@ func (ah *AuthHandler) WWWAuthHeader() (name string, withRealm bool) {
 //----------------------------------------------------------------------------------------------------------------------------//
 
 // Стандартный вызов - попытка аутентификации данным методом
-func (ah *AuthHandler) Check(id uint64, prefix string, path string, w http.ResponseWriter, r *http.Request) (identity *auth.Identity, tryNext bool) {
+func (ah *AuthHandler) Check(id uint64, prefix string, path string, w http.ResponseWriter, r *http.Request) (identity *auth.Identity, tryNext bool, err error) {
 	if !ah.initialized {
 		auth.Log.Message(log.INFO, `[%d] Not initialized yet`, id)
-		return nil, false
+		return nil, false, errors.New("Not initialized yet")
 
 	}
 
@@ -267,21 +268,21 @@ func (ah *AuthHandler) Check(id uint64, prefix string, path string, w http.Respo
 
 	if err != nil {
 		auth.Log.Message(log.INFO, `[%d] KC login error: %s`, id, err)
-		return nil, false
+		return nil, false, err
 	}
 
 	if userInfo != nil {
 		// Успешно!
-		return &auth.Identity{
-				Method: module,
-				User:   userInfo.UserName,
-				Groups: userInfo.Groups,
-				Extra:  userInfo,
-			},
-			false
+		userIdentity := &auth.Identity{
+			Method: module,
+			User:   userInfo.UserName,
+			Groups: userInfo.Groups,
+			Extra:  userInfo,
+		}
+		return userIdentity, false, nil
 	}
 
-	return nil, false
+	return nil, false, errors.New("user not found or illegal password")
 }
 
 //----------------------------------------------------------------------------------------------------------------------------//
