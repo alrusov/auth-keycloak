@@ -6,7 +6,6 @@ package kc
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/coreos/go-oidc"
@@ -111,7 +110,6 @@ func (ah *AuthHandler) init() (err error) {
 	}()
 
 	// Инициализируем список сессий
-	ah.sessionsMutex = new(sync.RWMutex)
 	ah.sessions = map[string]*sessionData{}
 
 	go func() {
@@ -122,7 +120,7 @@ func (ah *AuthHandler) init() (err error) {
 
 		for misc.AppStarted() {
 			now := misc.NowUnix()
-			ah.sessionsMutex.Lock()
+			ah.Lock()
 
 			for n, v := range ah.sessions {
 				if now > v.validBefore {
@@ -130,7 +128,7 @@ func (ah *AuthHandler) init() (err error) {
 				}
 			}
 
-			ah.sessionsMutex.Unlock()
+			ah.Unlock()
 
 			misc.Sleep(60 * time.Second)
 		}

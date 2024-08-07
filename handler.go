@@ -30,6 +30,8 @@ import (
 type (
 	// Описание
 	AuthHandler struct {
+		sync.RWMutex // mutex кэша сессий
+
 		initialized bool // Инициализирован?
 
 		http *stdhttp.HTTP // Базовый HTTP
@@ -49,8 +51,7 @@ type (
 		provider            *oidc.Provider        // oauth2 провайдер
 		verifier            *oidc.IDTokenVerifier // oauth2 верифаер токена
 
-		sessionsMutex *sync.RWMutex           // mutex кэша сессий
-		sessions      map[string]*sessionData // кэш сессий
+		sessions map[string]*sessionData // кэш сессий
 	}
 
 	// Дополнительные параметры конфигурации
@@ -240,8 +241,8 @@ func (ah *AuthHandler) WWWAuthHeader() (name string, withRealm bool) {
 // Стандартный вызов - попытка аутентификации данным методом
 func (ah *AuthHandler) Check(id uint64, prefix string, path string, w http.ResponseWriter, r *http.Request) (identity *auth.Identity, tryNext bool, err error) {
 	if !ah.initialized {
-		auth.Log.Message(log.INFO, `[%d] Not initialized yet`, id)
-		return nil, false, errors.New("Not initialized yet")
+		auth.Log.Message(log.INFO, `[%d] not initialized yet`, id)
+		return nil, false, errors.New("not initialized yet")
 
 	}
 
@@ -301,9 +302,9 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 
 			if sessionSign != "" {
 				// Удаляем их кэша
-				ah.sessionsMutex.Lock()
+				ah.Lock()
 				delete(ah.sessions, sessionSign)
-				ah.sessionsMutex.Unlock()
+				ah.Unlock()
 			}
 
 			baseURL := ah.baseURL(r)
@@ -358,9 +359,9 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 
 	sessionSign = parts[2]
 
-	ah.sessionsMutex.RLock()
+	ah.RLock()
 	session, exists := ah.sessions[sessionSign]
-	ah.sessionsMutex.RUnlock()
+	ah.RUnlock()
 
 	if exists {
 		if misc.NowUnix() >= session.validBefore {
@@ -425,9 +426,9 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 	session.validBefore = exp
 	session.UserInfo = userInfo
 
-	ah.sessionsMutex.Lock()
+	ah.Lock()
 	ah.sessions[sessionSign] = session
-	ah.sessionsMutex.Unlock()
+	ah.Unlock()
 
 	return
 }
