@@ -36,8 +36,8 @@ func (ah *AuthHandler) init() (err error) {
 	ah.http.AddHandler(ah, false)
 	ah.http.AddEndpointsInfo(
 		misc.StringMap{
-			ah.callbackRedirectPath: "Callback for the Keycloack. Parameters: according to keycloak documentation",
-			ah.logoutRedirectPath:   "Keycloack logout. Parameters: according to keycloak documentation",
+			ah.callbackRedirectPath: "Callback for the Keycloack",
+			ah.logoutRedirectPath:   "Keycloack logout",
 		},
 	)
 
