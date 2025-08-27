@@ -132,6 +132,7 @@ func init() {
 // Проверка валидности дополнительных опций метода
 func (options *methodOptions) Check(cfg any) (err error) {
 	msgs := misc.NewMessages()
+	defer msgs.Free()
 
 	options.AuthServer = misc.NormalizeSlashes(options.AuthServer)
 
