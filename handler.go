@@ -15,7 +15,7 @@ import (
 	"sync"
 
 	"github.com/coreos/go-oidc"
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 
 	"github.com/alrusov/auth"
@@ -110,6 +110,11 @@ type (
 		Department string   `json:"department"`  // Подразделения
 		Groups     []string `json:"groups"`      // Группы, в которых состоит
 	}
+)
+
+var (
+	// Алгоритмы подписи токенов kc, подходящие к его RSA-ключу
+	kcSigningMethods = []string{jwt.SigningMethodRS256.Alg(), jwt.SigningMethodRS384.Alg(), jwt.SigningMethodRS512.Alg()}
 )
 
 const (
@@ -395,12 +400,7 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 		return
 	}
 
-	_, err = jwt.ParseWithClaims(accessToken, &session.TokenInfo,
-		func(*jwt.Token) (any, error) {
-			return ah.kcPubKey, nil
-		},
-		jwt.WithoutAudienceValidation(),
-	)
+	err = ah.parseToken(accessToken, session.TokenInfo)
 	if err != nil {
 		return
 	}
@@ -594,6 +594,22 @@ func isLocal(url string) bool {
 	}
 
 	return false
+}
+
+//----------------------------------------------------------------------------------------------------------------------------//
+
+// Проверка подписи и срока access-токена kc, claims - в dst.
+// Ключ kc - RSA, поэтому только RS256/RS384/RS512: токен с другим alg (например, HS256 с открытым ключом в качестве
+// секрета) отвергается до проверки подписи. aud не проверяется (v5 - только если задан WithAudience), exp обязателен
+func (ah *AuthHandler) parseToken(accessToken string, dst jwt.MapClaims) (err error) {
+	_, err = jwt.ParseWithClaims(accessToken, dst,
+		func(*jwt.Token) (any, error) {
+			return ah.kcPubKey, nil
+		},
+		jwt.WithValidMethods(kcSigningMethods),
+		jwt.WithExpirationRequired(),
+	)
+	return
 }
 
 //----------------------------------------------------------------------------------------------------------------------------//
