@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
-	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
 	"github.com/alrusov/auth"
@@ -21,7 +20,6 @@ import (
 //----------------------------------------------------------------------------------------------------------------------------//
 
 func (ah *AuthHandler) init() (err error) {
-	ah.uuid = uuid.NewString()
 
 	if ah.http == nil {
 		err = fmt.Errorf("HTTP is not set")

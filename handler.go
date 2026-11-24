@@ -39,8 +39,6 @@ type (
 		cfg     *config.AuthMethod // Стандартная конфигурация этого метода
 		options *methodOptions     // Дополнительные параметры конфигурации
 
-		uuid string // uuid, генерится при запуске и используется в качестве префикса статура при взаимодействии с kc сервером
-
 		callbackRedirectPath string // Путь до callback
 		logoutRedirectPath   string // Путь до logout
 
@@ -318,7 +316,8 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 
 			if logoutNeeded {
 				// Если нужен logout
-				w.Header().Set("Location", misc.NormalizeSlashes(fmt.Sprintf("%s/%s?referer=%s&token=%s", baseURL, ah.logoutRedirectPath, referer, accessToken)))
+				// Токен в адрес не кладём: адрес попадает в журналы и историю браузера
+				w.Header().Set("Location", misc.NormalizeSlashes(fmt.Sprintf("%s/%s?referer=%s", baseURL, ah.logoutRedirectPath, referer)))
 				w.WriteHeader(http.StatusFound)
 				return
 			}
@@ -328,8 +327,15 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 
 			if accessToken == "" {
 				// токен не обновлён
+				nonce, e := newStateNonce()
+				if e != nil {
+					err = e
+					return
+				}
+				ah.setCookie(w, baseURL, stateCookieName, nonce, stateCookieMaxAge)
+
 				oa := ah.oaConfig(baseURL, r)
-				w.Header().Set("Location", oa.AuthCodeURL(fmt.Sprintf("%s%s", ah.uuid, referer)))
+				w.Header().Set("Location", oa.AuthCodeURL(nonce+referer))
 				w.WriteHeader(http.StatusFound)
 				return
 			}
@@ -354,7 +360,7 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 
 	parts := strings.SplitN(accessToken, ".", 3)
 	if len(parts) != 3 {
-		err = fmt.Errorf("illegal token format: %s", accessToken)
+		err = fmt.Errorf("illegal token format")
 		return
 	}
 
@@ -396,6 +402,14 @@ func (ah *AuthHandler) check(id uint64, prefix string, path string, w http.Respo
 		jwt.WithoutAudienceValidation(),
 	)
 	if err != nil {
+		return
+	}
+
+	// Проверку aud kc не даёт (там обычно "account"), поэтому проверяем, кому выдан токен:
+	// иначе подходит токен любого клиента того же realm
+	azp, _ := session.TokenInfo["azp"].(string)
+	if azp != ah.options.ClientID {
+		err = fmt.Errorf(`token is issued for "%s", expected "%s"`, azp, ah.options.ClientID)
 		return
 	}
 
@@ -452,8 +466,9 @@ func (ah *AuthHandler) tryToRefresh(id uint64, w http.ResponseWriter, r *http.Re
 	}
 
 	// Успешно, ставим куки с токенами
-	w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s;", accessTokenName, newAccessToken, ah.options.Domain))
-	w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s;", refreshTokenName, newRefreshToken, ah.options.Domain))
+	baseURL := ah.baseURL(r)
+	ah.setCookie(w, baseURL, accessTokenName, newAccessToken, 0)
+	ah.setCookie(w, baseURL, refreshTokenName, newRefreshToken, 0)
 
 	// будем надеяться, что наши куки дальше не потрут
 	// иначе надо раскоментаривать следующие две строки, что приведет к редиректу, а это, в числе прочего, нехорошо для POST

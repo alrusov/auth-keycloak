@@ -26,9 +26,9 @@ func (ah *AuthHandler) Handler(id uint64, prefix string, path string, w http.Res
 		requestQuery := r.URL.Query()
 
 		// Удаляем KC куки, добавлем токен и летим на закрытие сессии
-		w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s; expires=Thu, 1 Jan 1970 00:00:00 UTC;", accessTokenName, "", ah.options.Domain))
-		w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s; expires=Thu, 1 Jan 1970 00:00:00 UTC;", refreshTokenName, "", ah.options.Domain))
-		w.Header().Set(auth.Header, "Bearer "+requestQuery.Get("token"))
+		baseURL := ah.baseURL(r)
+		ah.setCookie(w, baseURL, accessTokenName, "", -1)
+		ah.setCookie(w, baseURL, refreshTokenName, "", -1)
 		w.Header().Set("Location", fmt.Sprintf("%s?redirect_uri=%s", ah.clientCfg.EndSessionEndpoint, url.QueryEscape(requestQuery.Get("referer"))))
 		w.WriteHeader(http.StatusFound)
 
@@ -48,13 +48,17 @@ func (ah *AuthHandler) Handler(id uint64, prefix string, path string, w http.Res
 		// Проброшенный из первичного вызова state
 		state := requestQuery.Get("state")
 
-		if !strings.HasPrefix(state, ah.uuid) {
-			// Нет uuid в начале - что-то не то прислали
+		// state = одноразовое значение из куки + адрес возврата
+		stateCookie, err := r.Cookie(stateCookieName)
+		if err != nil || len(stateCookie.Value) != stateNonceLen || !strings.HasPrefix(state, stateCookie.Value) {
 			ah.errorReply(id, w, r, http.StatusBadRequest, "State did not match")
 			return
 		}
 
-		referer, err := url.QueryUnescape(state[len(ah.uuid):])
+		baseURL := ah.baseURL(r)
+		ah.setCookie(w, baseURL, stateCookieName, "", -1)
+
+		referer, err := url.QueryUnescape(state[stateNonceLen:])
 		if err != nil {
 			// Куда потом лететь не сказали
 			ah.errorReply(id, w, r, http.StatusInternalServerError, "Bad referer (%s)", err)
@@ -62,7 +66,7 @@ func (ah *AuthHandler) Handler(id uint64, prefix string, path string, w http.Res
 		}
 
 		// Обмениваем временный токен на постоянный
-		oa := ah.oaConfig(ah.baseURL(r), r)
+		oa := ah.oaConfig(baseURL, r)
 		oauth2Token, err := oa.Exchange(context.Background(), requestQuery.Get("code"))
 		if err != nil {
 			ah.errorReply(id, w, r, http.StatusInternalServerError, "Failed to exchange token (%s)", err)
@@ -99,11 +103,11 @@ func (ah *AuthHandler) Handler(id uint64, prefix string, path string, w http.Res
 
 		// Всё получилось, устанавливаем заголовки с токенами и летим, куда попросили
 
-		auth.Log.Message(log.DEBUG, "The new token acquired: %s", accessToken)
+		auth.Log.Message(log.DEBUG, "[%d] The new token acquired", id)
 
-		w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s;", accessTokenName, accessToken, ah.options.Domain))
-		w.Header().Add("Set-Cookie", fmt.Sprintf("%s=%s; path=/; domain=%s;", refreshTokenName, refreshToken, ah.options.Domain))
-		w.Header().Set("Location", referer)
+		ah.setCookie(w, baseURL, accessTokenName, accessToken, 0)
+		ah.setCookie(w, baseURL, refreshTokenName, refreshToken, 0)
+		w.Header().Set("Location", safeReferer(referer, baseURL))
 		w.WriteHeader(http.StatusFound)
 
 		return

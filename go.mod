@@ -3,7 +3,7 @@ module github.com/alrusov/auth-keycloak
 go 1.25.0
 
 require (
-	github.com/alrusov/auth v0.1.11
+	github.com/alrusov/auth v0.1.12
 	github.com/alrusov/config v0.1.65
 	github.com/alrusov/jsonw v0.1.3
 	github.com/alrusov/log v0.1.39
@@ -12,7 +12,6 @@ require (
 	github.com/alrusov/stdhttp v0.1.128
 	github.com/coreos/go-oidc v2.4.0+incompatible
 	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-	github.com/google/uuid v1.6.0
 	golang.org/x/oauth2 v0.30.0
 )
 
